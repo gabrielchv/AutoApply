@@ -26,17 +26,21 @@ pnpm build && pnpm build:firefox
 ```
 entrypoints/
   background.ts   message router — the ONLY code allowed to read the API key
-                  and call LLM providers
-  content.ts      scrape + fill + attach; runs in every frame; never sees the key
-  popup/          fill trigger + result summary
-  options/        profile & settings UI
+                  and call LLM providers; wires side-panel opening
+  content.ts      scrape + fill + attach + job-context extraction; runs in every
+                  frame; never sees the key
+  sidepanel/      the fill cockpit: job context, notes, fill trigger, outcomes
+  options/        profile, history & settings UI
 lib/
   profile/        zod schema — the contract between ingestion, UI and mapping
+  jobContext/     pure posting extractor (JSON-LD + heuristics) + URL normalizer
   llm/            provider-agnostic client (OpenAI + Anthropic wire formats)
   prompts/        pure prompt builders + JSON parse/validate/retry pipeline
   pdf/            pdf.js text extraction (options page only)
   scrape/         DOM → ScrapedField[] (labels, options, registry)
-  fill/           plan application: native setters, events, highlights, attach
+  fill/           plan application (native setters, events, highlights, attach)
+                  and the runFill orchestration used by the side panel
+  format/         pure formatting helpers (relative time)
   storage/        typed storage.local + IndexedDB access
   messaging/      typed runtime message protocol
 ```
@@ -45,7 +49,7 @@ Boundary rules — enforced by review, please keep them:
 
 - `lib/**` never imports React.
 - Only `entrypoints/background.ts` imports `lib/llm/*` or reads the API key.
-- The content script imports only `scrape`, `fill` and `messaging`.
+- The content script imports only `scrape`, `fill`, `jobContext` and `messaging`.
 - `lib/prompts` stays pure (strings in, strings/objects out) — it is the most
   heavily tested code in the repo.
 - No code path may ever submit a form. Do not add one.

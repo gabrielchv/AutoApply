@@ -20,9 +20,15 @@ the LLM provider _you_ configured.
 - **Universal filling** — no per-site adapters. The extension reads the form's
   fields and asks the LLM to map them to your profile, including open questions
   like "Why do you want to work here?".
+- **Job-aware answers** — a side panel sits next to the posting, auto-extracts the
+  job description (schema.org data or page text), and lets you add private notes
+  ("emphasize my platform work"). Open answers name the company and role and are
+  tailored to that specific job — never fabricated.
 - **CV attachment** — the original PDF is stored locally and attached to the form's
   file input automatically; when a custom uploader defeats that, the field is
   highlighted for you to attach manually.
+- **Application history** — every fill is logged locally (role, company, when,
+  outcome) so you always know where you applied.
 - **You stay in control** — filling is always manually triggered and the extension
   **never submits a form**. You review, you click send.
 
@@ -47,8 +53,11 @@ Then:
    key, and hit _Test connection_.
 2. In the **Profile** tab, upload your CV as PDF. The LLM structures it once;
    review and correct the result — it is the source of truth for every fill.
-3. Open a job application page, click the AutoApply icon, and hit
-   **Fill this page**. Review the highlighted fields and submit yourself.
+3. Open a job posting and click the AutoApply icon — the **side panel** opens next
+   to the page with the extracted job context. Adjust it, add notes if you like,
+   and hit **Fill this page**. Review the highlighted fields and submit yourself.
+   The panel follows your active tab, and context/notes are remembered per
+   posting.
 
 ### Provider notes
 
@@ -67,10 +76,11 @@ options page ── PDF ──▶ pdf.js (local) ── text ──▶ backgroun
      ▲                                                 │
      └───────────── editable profile JSON ◀────────────┘
 
-popup ─▶ content script scrapes fields ─▶ background + profile ─▶ your LLM
-              ▲                                     │
-              └──────── validated fill plan ◀───────┘
-              fills, highlights, attaches CV — never submits
+side panel ─▶ content script scrapes fields + job description
+     │                     │
+     │    background + profile + job context + your notes ─▶ your LLM
+     │                     │
+     └── validated fill plan ─▶ fills, highlights, attaches CV — never submits
 ```
 
 - The **profile** is a zod-validated JSON document you can edit at any time; the
@@ -78,6 +88,10 @@ popup ─▶ content script scrapes fields ─▶ background + profile ─▶ yo
 - **Scraping** collects labels (label/aria/placeholder/nearby-text heuristics),
   select and radio options, and required flags — the page is never mutated for
   tracking.
+- The **job context** comes from the posting itself: schema.org `JobPosting`
+  structured data when the site publishes it, a content heuristic otherwise. You
+  can edit it, and your per-job notes ride along as private instructions to the
+  model — followed, never quoted into answers.
 - The **fill plan** returned by the LLM is schema-validated (with one corrective
   retry) and sanitized before a single field is touched. Values are written
   through native setters with proper `input`/`change` events so React-style forms
