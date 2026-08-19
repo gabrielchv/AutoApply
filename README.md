@@ -49,9 +49,9 @@ pnpm build:firefox    # Firefox MV2 → .output/firefox-mv2
 
 Then:
 
-1. Open the extension's **Settings** tab, pick a provider preset, paste your API
-   key, and hit _Test connection_.
-2. In the **Profile** tab, upload your CV as PDF. The LLM structures it once;
+1. **Step 1 — LLM provider**: pick a provider preset, paste your API key, and hit
+   _Test connection_. Everything else runs through it, so this comes first.
+2. **Step 2 — Your CV**: upload your CV as PDF. The LLM structures it once;
    review and correct the result — it is the source of truth for every fill.
 3. Open a job posting and click the AutoApply icon — the **side panel** opens next
    to the page with the extracted job context. Adjust it, add notes if you like,

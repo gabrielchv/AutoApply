@@ -25,6 +25,7 @@ export function SettingsTab({ onSaved, nextStep }: SettingsTabProps) {
   const [apiKey, setApiKey] = useState('');
   const [model, setModel] = useState('');
   const [status, setStatus] = useState<Status>({ state: 'idle' });
+  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     void loadLlmSettings().then((settings) => {
@@ -60,8 +61,6 @@ export function SettingsTab({ onSaved, nextStep }: SettingsTabProps) {
   }
 
   const incomplete = !baseUrl.trim() || !model.trim();
-
-  const [saved, setSaved] = useState(false);
 
   async function handleSave() {
     setStatus({ state: 'busy', message: 'Saving…' });
