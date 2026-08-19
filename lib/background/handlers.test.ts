@@ -112,4 +112,85 @@ describe('handleBackgroundMessage', () => {
     });
     expect(response).toMatchObject({ ok: false, error: { kind: 'invalid-output' } });
   });
+
+  it('maps a form into a sanitized fill plan', async () => {
+    await saveLlmSettings({
+      format: 'openai',
+      baseUrl: 'https://api.openai.com/v1',
+      apiKey: 'sk-test',
+      model: 'gpt-4.1-mini',
+      supportsJsonMode: true,
+    });
+    await fakeBrowser.storage.local.set({
+      profile: {
+        meta: { version: 1, createdAt: '2026-01-01', updatedAt: '2026-01-01' },
+        personal: {
+          firstName: 'Ada',
+          lastName: 'Lovelace',
+          email: 'ada@example.com',
+          location: {},
+        },
+        workAuthorization: { authorizedToWorkIn: [] },
+        links: { other: [] },
+        experiences: [],
+        education: [],
+        skills: [],
+        languages: [],
+        certifications: [],
+        preferences: {},
+        extraAnswers: [],
+      },
+    });
+    const llmOutput = JSON.stringify({
+      fields: [
+        { id: 'f0', action: 'fill', value: 'Ada' },
+        { id: 'ghost', action: 'fill', value: 'nope' },
+      ],
+    });
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response(
+            JSON.stringify({ choices: [{ message: { content: llmOutput } }] }),
+            { status: 200 },
+          ),
+        ),
+    );
+
+    const response = await handleBackgroundMessage({
+      type: 'MAP_FORM',
+      fields: [
+        {
+          id: 'f0',
+          kind: 'text',
+          label: 'First name',
+          required: true,
+          alreadyFilled: false,
+        },
+      ],
+      pageContext: { url: 'https://x.test', title: 'Apply' },
+    });
+
+    expect(response.ok).toBe(true);
+    if (response.ok) {
+      expect(response.value.fields).toEqual([{ id: 'f0', action: 'fill', value: 'Ada' }]);
+    }
+  });
+
+  it('requires a profile before mapping', async () => {
+    await saveLlmSettings({
+      format: 'openai',
+      baseUrl: 'https://api.openai.com/v1',
+      apiKey: 'sk-test',
+      model: 'gpt-4.1-mini',
+    });
+    const response = await handleBackgroundMessage({
+      type: 'MAP_FORM',
+      fields: [],
+      pageContext: { url: 'https://x.test', title: 'Apply' },
+    });
+    expect(response).toMatchObject({ ok: false, error: { kind: 'not-configured' } });
+  });
 });

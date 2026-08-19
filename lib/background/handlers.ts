@@ -1,3 +1,5 @@
+import { fillPlanSchema, sanitizePlan } from '../fill/planSchema';
+import type { FillPlan } from '../fill/types';
 import { complete } from '../llm/client';
 import type { LlmMessage, LlmSettings } from '../llm/types';
 import { LlmError } from '../llm/types';
@@ -13,8 +15,11 @@ import type { ProfileContent } from '../profile/schema';
 import { profileContentSchema } from '../profile/schema';
 import type { RetryContext } from '../prompts/parseJson';
 import { InvalidOutputError, parseWithRetry } from '../prompts/parseJson';
+import { buildMappingPrompt } from '../prompts/mapForm';
 import { buildStructureCvPrompt } from '../prompts/structureCv';
+import type { PageContext, ScrapedField } from '../scrape/types';
 import { loadCvFile } from '../storage/cvFile';
+import { loadProfile } from '../storage/profile';
 import { loadLlmSettings } from '../storage/settings';
 
 const NOT_CONFIGURED: ErrorPayload = {
@@ -75,6 +80,35 @@ async function handleStructureCv(rawText: string): Promise<Result<ProfileContent
   }
 }
 
+async function handleMapForm(
+  fields: ScrapedField[],
+  pageContext: PageContext,
+): Promise<Result<FillPlan>> {
+  const settings = await requireSettings();
+  if (!settings.ok) return settings;
+  const profile = await loadProfile();
+  if (!profile) {
+    return err({
+      message: 'No profile yet. Upload your CV in AutoApply settings first.',
+      kind: 'not-configured',
+    });
+  }
+  try {
+    const plan = await parseWithRetry(
+      fillPlanSchema,
+      llmJsonCall(settings.value, buildMappingPrompt(fields, profile, pageContext)),
+    );
+    return ok(
+      sanitizePlan(
+        plan,
+        fields.map((field) => field.id),
+      ),
+    );
+  } catch (error) {
+    return err(toErrorPayload(error));
+  }
+}
+
 async function handleTestConnection(settings: LlmSettings): Promise<Result<string>> {
   try {
     const response = await complete(settings, {
@@ -112,14 +146,7 @@ export async function handleBackgroundMessage<M extends BackgroundRequest>(
       return (await handleTestConnection(message.settings)) as ResponseFor<M>;
     case 'STRUCTURE_CV':
       return (await handleStructureCv(message.rawText)) as ResponseFor<M>;
-    case 'MAP_FORM': {
-      const settings = await requireSettings();
-      if (!settings.ok) return settings as ResponseFor<M>;
-      // The mapping handler lands with the fill feature.
-      return err({
-        message: 'Not implemented yet.',
-        kind: 'provider',
-      }) as ResponseFor<M>;
-    }
+    case 'MAP_FORM':
+      return (await handleMapForm(message.fields, message.pageContext)) as ResponseFor<M>;
   }
 }
