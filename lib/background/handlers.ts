@@ -118,10 +118,17 @@ async function handleTestConnection(settings: LlmSettings): Promise<Result<strin
   try {
     const response = await complete(settings, {
       messages: [{ role: 'user', content: 'Reply with the single word: OK' }],
-      maxTokens: 16,
+      // Generous budget: reasoning models (Gemini 2.5, o-series) spend tokens
+      // on hidden thinking first and would return empty text under a tight cap.
+      maxTokens: 512,
     });
     return ok(response.text.trim());
   } catch (error) {
+    // A reply with no text still proves the endpoint, key and model work —
+    // which is all this probe is asking.
+    if (error instanceof LlmError && error.kind === 'empty') {
+      return ok('connected (the model replied without text)');
+    }
     return err(toErrorPayload(error));
   }
 }

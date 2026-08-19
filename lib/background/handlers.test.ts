@@ -179,6 +179,75 @@ describe('handleBackgroundMessage', () => {
     }
   });
 
+  it('gives reasoning models room to answer the connection probe', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ choices: [{ message: { content: 'OK' } }] }), {
+        status: 200,
+      }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    const response = await handleBackgroundMessage({
+      type: 'TEST_CONNECTION',
+      settings: {
+        format: 'openai',
+        baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
+        apiKey: 'key',
+        model: 'gemini-2.5-flash',
+      },
+    });
+
+    expect(response).toEqual({ ok: true, value: 'OK' });
+    const body = JSON.parse(
+      (fetchMock.mock.calls[0] as [string, RequestInit])[1].body as string,
+    );
+    expect(body.max_tokens).toBeGreaterThanOrEqual(512);
+  });
+
+  it('treats a text-free reply as a successful connection', async () => {
+    // Reasoning models can burn the whole budget on hidden thinking; the
+    // endpoint, key and model are still proven to work.
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ choices: [{ message: { content: '' } }] }), {
+          status: 200,
+        }),
+      ),
+    );
+
+    const response = await handleBackgroundMessage({
+      type: 'TEST_CONNECTION',
+      settings: {
+        format: 'openai',
+        baseUrl: 'https://api.openai.com/v1',
+        apiKey: 'key',
+        model: 'o4-mini',
+      },
+    });
+
+    expect(response.ok).toBe(true);
+  });
+
+  it('still reports a bad key from the connection probe', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(new Response('{"error":"nope"}', { status: 401 })),
+    );
+
+    const response = await handleBackgroundMessage({
+      type: 'TEST_CONNECTION',
+      settings: {
+        format: 'openai',
+        baseUrl: 'https://api.openai.com/v1',
+        apiKey: 'wrong',
+        model: 'gpt-4.1-mini',
+      },
+    });
+
+    expect(response).toMatchObject({ ok: false, error: { kind: 'auth' } });
+  });
+
   it('requires a profile before mapping', async () => {
     await saveLlmSettings({
       format: 'openai',
