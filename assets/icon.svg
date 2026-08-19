@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <!-- AutoApply: a form being completed — three field lines, bold check. -->
+  <rect width="128" height="128" rx="28" fill="#4353ff" />
+  <rect x="26" y="34" width="76" height="11" rx="5.5" fill="#ffffff" opacity="0.95" />
+  <rect x="26" y="57" width="76" height="11" rx="5.5" fill="#ffffff" opacity="0.7" />
+  <rect x="26" y="80" width="34" height="11" rx="5.5" fill="#ffffff" opacity="0.45" />
+  <path
+    d="M70 86 L84 100 L107 64"
+    fill="none"
+    stroke="#ffffff"
+    stroke-width="14"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+</svg>
