@@ -1,5 +1,5 @@
 import { complete } from '../llm/client';
-import type { LlmSettings } from '../llm/types';
+import type { LlmMessage, LlmSettings } from '../llm/types';
 import { LlmError } from '../llm/types';
 import type {
   BackgroundRequest,
@@ -9,6 +9,11 @@ import type {
   Result,
 } from '../messaging/protocol';
 import { err, ok } from '../messaging/protocol';
+import type { ProfileContent } from '../profile/schema';
+import { profileContentSchema } from '../profile/schema';
+import type { RetryContext } from '../prompts/parseJson';
+import { InvalidOutputError, parseWithRetry } from '../prompts/parseJson';
+import { buildStructureCvPrompt } from '../prompts/structureCv';
 import { loadCvFile } from '../storage/cvFile';
 import { loadLlmSettings } from '../storage/settings';
 
@@ -25,6 +30,51 @@ async function requireSettings(): Promise<Result<LlmSettings>> {
   return ok(settings);
 }
 
+function toErrorPayload(error: unknown): ErrorPayload {
+  if (error instanceof LlmError) {
+    return { message: error.message, kind: error.kind };
+  }
+  if (error instanceof InvalidOutputError) {
+    return { message: error.message, kind: 'invalid-output' };
+  }
+  return { message: String(error), kind: 'provider' };
+}
+
+/**
+ * Builds the `call` used by parseWithRetry: base conversation on the first
+ * attempt; on retry, the failed response plus corrective feedback are
+ * appended so the model can fix its own output.
+ */
+function llmJsonCall(settings: LlmSettings, baseMessages: LlmMessage[]) {
+  const jsonMode =
+    settings.format === 'anthropic' || (settings.supportsJsonMode ?? false);
+  return async (retry?: RetryContext): Promise<string> => {
+    const messages: LlmMessage[] = retry
+      ? [
+          ...baseMessages,
+          { role: 'assistant', content: retry.previousResponse },
+          { role: 'user', content: retry.feedback },
+        ]
+      : baseMessages;
+    const response = await complete(settings, { messages, jsonMode, maxTokens: 8192 });
+    return response.text;
+  };
+}
+
+async function handleStructureCv(rawText: string): Promise<Result<ProfileContent>> {
+  const settings = await requireSettings();
+  if (!settings.ok) return settings;
+  try {
+    const profile = await parseWithRetry(
+      profileContentSchema,
+      llmJsonCall(settings.value, buildStructureCvPrompt(rawText)),
+    );
+    return ok(profile);
+  } catch (error) {
+    return err(toErrorPayload(error));
+  }
+}
+
 async function handleTestConnection(settings: LlmSettings): Promise<Result<string>> {
   try {
     const response = await complete(settings, {
@@ -33,10 +83,7 @@ async function handleTestConnection(settings: LlmSettings): Promise<Result<strin
     });
     return ok(response.text.trim());
   } catch (error) {
-    if (error instanceof LlmError) {
-      return err({ message: error.message, kind: error.kind });
-    }
-    return err({ message: String(error), kind: 'provider' });
+    return err(toErrorPayload(error));
   }
 }
 
@@ -64,10 +111,11 @@ export async function handleBackgroundMessage<M extends BackgroundRequest>(
     case 'TEST_CONNECTION':
       return (await handleTestConnection(message.settings)) as ResponseFor<M>;
     case 'STRUCTURE_CV':
+      return (await handleStructureCv(message.rawText)) as ResponseFor<M>;
     case 'MAP_FORM': {
       const settings = await requireSettings();
       if (!settings.ok) return settings as ResponseFor<M>;
-      // LLM-backed handlers land with the ingestion and mapping features.
+      // The mapping handler lands with the fill feature.
       return err({
         message: 'Not implemented yet.',
         kind: 'provider',

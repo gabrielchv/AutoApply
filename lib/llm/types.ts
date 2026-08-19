@@ -10,6 +10,12 @@ export interface LlmSettings {
   baseUrl: string;
   apiKey: string;
   model: string;
+  /**
+   * Whether the endpoint honors OpenAI's response_format json_object
+   * (Gemini's compat endpoint and Ollama don't guarantee it). Anthropic
+   * ignores this — its JSON mode is a prompt-level prefill.
+   */
+  supportsJsonMode?: boolean;
 }
 
 export interface LlmMessage {

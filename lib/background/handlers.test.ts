@@ -1,5 +1,5 @@
 import 'fake-indexeddb/auto';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing';
 import { IDBFactory } from 'fake-indexeddb';
 import { saveCvFile } from '../storage/cvFile';
@@ -9,6 +9,10 @@ import { handleBackgroundMessage } from './handlers';
 beforeEach(() => {
   fakeBrowser.reset();
   indexedDB = new IDBFactory();
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
 });
 
 describe('handleBackgroundMessage', () => {
@@ -40,18 +44,72 @@ describe('handleBackgroundMessage', () => {
     });
   });
 
-  it('passes the configuration guard when settings exist', async () => {
+  it('structures CV text into a validated profile via the LLM', async () => {
+    await saveLlmSettings({
+      format: 'openai',
+      baseUrl: 'https://api.openai.com/v1',
+      apiKey: 'sk-test',
+      model: 'gpt-4.1-mini',
+      supportsJsonMode: true,
+    });
+    const llmOutput = JSON.stringify({
+      personal: {
+        firstName: 'Ada',
+        lastName: 'Lovelace',
+        email: 'ada@example.com',
+      },
+      skills: ['mathematics'],
+    });
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue(
+          new Response(
+            JSON.stringify({ choices: [{ message: { content: llmOutput } }] }),
+            { status: 200 },
+          ),
+        ),
+    );
+
+    const response = await handleBackgroundMessage({
+      type: 'STRUCTURE_CV',
+      rawText: 'Ada Lovelace — ada@example.com — mathematics',
+    });
+
+    expect(response.ok).toBe(true);
+    if (response.ok) {
+      expect(response.value.personal.firstName).toBe('Ada');
+      expect(response.value.skills).toEqual(['mathematics']);
+      expect(response.value.experiences).toEqual([]);
+    }
+  });
+
+  it('surfaces invalid-output after the model fails twice', async () => {
     await saveLlmSettings({
       format: 'openai',
       baseUrl: 'https://api.openai.com/v1',
       apiKey: 'sk-test',
       model: 'gpt-4.1-mini',
     });
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockImplementation(() =>
+          Promise.resolve(
+            new Response(
+              JSON.stringify({ choices: [{ message: { content: 'not json' } }] }),
+              { status: 200 },
+            ),
+          ),
+        ),
+    );
+
     const response = await handleBackgroundMessage({
       type: 'STRUCTURE_CV',
-      rawText: 'some cv',
+      rawText: 'cv text',
     });
-    // Not implemented yet, but the guard let it through.
-    expect(response).toMatchObject({ ok: false, error: { kind: 'provider' } });
+    expect(response).toMatchObject({ ok: false, error: { kind: 'invalid-output' } });
   });
 });
