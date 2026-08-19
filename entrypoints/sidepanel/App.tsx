@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { browser } from 'wxt/browser';
 import { runFill } from '../../lib/fill/orchestrate';
 import type { FillResult } from '../../lib/fill/types';
+import { recordFill } from '../../lib/storage/history';
 import { loadProfile } from '../../lib/storage/profile';
 import { loadLlmSettings } from '../../lib/storage/settings';
 import { ContextSection } from './components/ContextSection';
@@ -63,8 +64,24 @@ export function App() {
         },
         (step) => setPhase({ state: 'busy', step }),
       );
-      if (outcome.ok) setPhase({ state: 'done', result: outcome.result });
-      else setPhase({ state: 'error', message: outcome.error.message });
+      if (outcome.ok) {
+        setPhase({ state: 'done', result: outcome.result });
+        const count = (kind: string) =>
+          outcome.result.outcomes.filter((item) => item.outcome === kind).length;
+        void recordFill({
+          url,
+          title: entry.context.title || outcome.pageContext.title || url,
+          company: entry.context.company,
+          filledAt: new Date().toISOString(),
+          counts: {
+            filled: count('filled'),
+            skipped: count('skipped'),
+            manual: count('needs-manual') + count('failed'),
+          },
+        });
+      } else {
+        setPhase({ state: 'error', message: outcome.error.message });
+      }
     } catch (error) {
       setPhase({ state: 'error', message: String(error) });
     }

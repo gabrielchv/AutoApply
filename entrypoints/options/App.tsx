@@ -1,8 +1,9 @@
 import { useState } from 'react';
+import { HistoryTab } from './HistoryTab';
 import { ProfileTab } from './ProfileTab';
 import { SettingsTab } from './SettingsTab';
 
-type Tab = 'profile' | 'settings';
+type Tab = 'profile' | 'history' | 'settings';
 
 export function App() {
   const [tab, setTab] = useState<Tab>('profile');
@@ -21,13 +22,21 @@ export function App() {
           Profile
         </button>
         <button
+          className={tab === 'history' ? 'active' : ''}
+          onClick={() => setTab('history')}
+        >
+          History
+        </button>
+        <button
           className={tab === 'settings' ? 'active' : ''}
           onClick={() => setTab('settings')}
         >
           Settings
         </button>
       </nav>
-      {tab === 'profile' ? <ProfileTab /> : <SettingsTab />}
+      {tab === 'profile' && <ProfileTab />}
+      {tab === 'history' && <HistoryTab />}
+      {tab === 'settings' && <SettingsTab />}
     </div>
   );
 }
