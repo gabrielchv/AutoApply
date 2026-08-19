@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import { browser } from 'wxt/browser';
+import { runFill } from '../../lib/fill/orchestrate';
 import type { FillResult } from '../../lib/fill/types';
-import type { ScrapeResult } from '../../lib/messaging/protocol';
-import { sendToBackground, sendToTab } from '../../lib/messaging/protocol';
 import { loadProfile } from '../../lib/storage/profile';
 import { loadLlmSettings } from '../../lib/storage/settings';
 
@@ -14,26 +13,11 @@ type Phase =
   | { state: 'done'; result: FillResult }
   | { state: 'error'; message: string };
 
-interface FrameScrape {
-  frameId: number;
-  scrape: ScrapeResult;
-}
-
-async function scrapeAllFrames(tabId: number): Promise<FrameScrape[]> {
-  const frames = (await browser.webNavigation.getAllFrames({ tabId })) ?? [];
-  const results = await Promise.all(
-    frames.map(async ({ frameId }) => {
-      try {
-        const scrape = await sendToTab(tabId, { type: 'SCRAPE_REQUEST' }, frameId);
-        return scrape ? { frameId, scrape } : null;
-      } catch {
-        // Frame without our content script (e.g. chrome://, PDF viewer).
-        return null;
-      }
-    }),
-  );
-  return results.filter((entry): entry is FrameScrape => entry !== null);
-}
+const PHASE_MESSAGES = {
+  scanning: 'Scanning the page…',
+  mapping: 'Asking your LLM to map the form…',
+  filling: 'Filling…',
+} as const;
 
 export function App() {
   const [phase, setPhase] = useState<Phase>({ state: 'checking' });
@@ -49,39 +33,14 @@ export function App() {
 
   async function fill() {
     try {
-      setPhase({ state: 'busy', message: 'Scanning the page…' });
       const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
       if (!tab?.id) throw new Error('No active tab.');
 
-      const scrapes = await scrapeAllFrames(tab.id);
-      // Job boards are often embedded in an iframe; fill the frame with the
-      // most fields (v1: one frame per run).
-      const best = scrapes.sort(
-        (a, b) => b.scrape.fields.length - a.scrape.fields.length,
-      )[0];
-      if (!best || best.scrape.fields.length === 0) {
-        setPhase({ state: 'error', message: 'No fillable form found on this page.' });
-        return;
-      }
-
-      setPhase({ state: 'busy', message: 'Asking your LLM to map the form…' });
-      const mapped = await sendToBackground({
-        type: 'MAP_FORM',
-        fields: best.scrape.fields,
-        pageContext: best.scrape.pageContext,
-      });
-      if (!mapped.ok) {
-        setPhase({ state: 'error', message: mapped.error.message });
-        return;
-      }
-
-      setPhase({ state: 'busy', message: 'Filling…' });
-      const result = await sendToTab(
-        tab.id,
-        { type: 'APPLY_PLAN', plan: mapped.value },
-        best.frameId,
+      const outcome = await runFill(tab.id, undefined, (step) =>
+        setPhase({ state: 'busy', message: PHASE_MESSAGES[step] }),
       );
-      setPhase({ state: 'done', result });
+      if (outcome.ok) setPhase({ state: 'done', result: outcome.result });
+      else setPhase({ state: 'error', message: outcome.error.message });
     } catch (error) {
       setPhase({ state: 'error', message: String(error) });
     }
