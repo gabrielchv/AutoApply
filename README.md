@@ -7,7 +7,7 @@
 AutoApply is a browser extension (Chrome + Firefox) that turns your résumé into a
 structured profile — once — and then fills job application forms on any site with a
 single click. Your data and your API key never leave your machine except to reach
-the LLM provider *you* configured.
+the LLM provider _you_ configured.
 
 ## Highlights
 
