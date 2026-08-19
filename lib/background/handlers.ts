@@ -1,4 +1,6 @@
+import { complete } from '../llm/client';
 import type { LlmSettings } from '../llm/types';
+import { LlmError } from '../llm/types';
 import type {
   BackgroundRequest,
   CvFilePayload,
@@ -23,6 +25,21 @@ async function requireSettings(): Promise<Result<LlmSettings>> {
   return ok(settings);
 }
 
+async function handleTestConnection(settings: LlmSettings): Promise<Result<string>> {
+  try {
+    const response = await complete(settings, {
+      messages: [{ role: 'user', content: 'Reply with the single word: OK' }],
+      maxTokens: 16,
+    });
+    return ok(response.text.trim());
+  } catch (error) {
+    if (error instanceof LlmError) {
+      return err({ message: error.message, kind: error.kind });
+    }
+    return err({ message: String(error), kind: 'provider' });
+  }
+}
+
 async function handleGetCvFile(): Promise<Result<CvFilePayload | null>> {
   const stored = await loadCvFile();
   if (!stored) return ok(null);
@@ -44,6 +61,8 @@ export async function handleBackgroundMessage<M extends BackgroundRequest>(
   switch (message.type) {
     case 'GET_CV_FILE':
       return (await handleGetCvFile()) as ResponseFor<M>;
+    case 'TEST_CONNECTION':
+      return (await handleTestConnection(message.settings)) as ResponseFor<M>;
     case 'STRUCTURE_CV':
     case 'MAP_FORM': {
       const settings = await requireSettings();

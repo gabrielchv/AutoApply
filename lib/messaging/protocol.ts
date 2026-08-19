@@ -1,5 +1,6 @@
 import { browser } from 'wxt/browser';
 import type { FillPlan, FillResult } from '../fill/types';
+import type { LlmSettings } from '../llm/types';
 import type { ProfileContent } from '../profile/schema';
 import type { PageContext, ScrapedField } from '../scrape/types';
 
@@ -25,7 +26,19 @@ export interface GetCvFileRequest {
   type: 'GET_CV_FILE';
 }
 
-export type BackgroundRequest = MapFormRequest | StructureCvRequest | GetCvFileRequest;
+/**
+ * Probe the given settings with a trivial completion. Settings travel in the
+ * payload so the user can test before saving; the options page is extension
+ * UI (not a content script), so carrying the key here stays inside the
+ * trusted context.
+ */
+export interface TestConnectionRequest {
+  type: 'TEST_CONNECTION';
+  settings: LlmSettings;
+}
+
+export type BackgroundRequest =
+  MapFormRequest | StructureCvRequest | GetCvFileRequest | TestConnectionRequest;
 
 // ---- Requests handled by the content script ----
 
@@ -73,11 +86,13 @@ export type ResponseFor<M> = M extends MapFormRequest
     ? Result<ProfileContent>
     : M extends GetCvFileRequest
       ? Result<CvFilePayload | null>
-      : M extends ScrapeRequest
-        ? ScrapeResult
-        : M extends ApplyPlanRequest
-          ? FillResult
-          : never;
+      : M extends TestConnectionRequest
+        ? Result<string>
+        : M extends ScrapeRequest
+          ? ScrapeResult
+          : M extends ApplyPlanRequest
+            ? FillResult
+            : never;
 
 // ---- Typed send helpers ----
 
