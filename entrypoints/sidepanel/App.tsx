@@ -1,13 +1,17 @@
 import { useEffect, useState } from 'react';
 import { browser } from 'wxt/browser';
+import type { FillPhase } from '../../lib/fill/orchestrate';
 import { runFill } from '../../lib/fill/orchestrate';
 import type { FillResult } from '../../lib/fill/types';
+import type { ErrorPayload } from '../../lib/messaging/protocol';
 import { recordFill } from '../../lib/storage/history';
 import { loadProfile } from '../../lib/storage/profile';
 import { loadLlmSettings } from '../../lib/storage/settings';
 import { ContextSection } from './components/ContextSection';
+import { ErrorNotice } from './components/ErrorNotice';
 import { JobHeader } from './components/JobHeader';
 import { NotesSection } from './components/NotesSection';
+import { OutcomeList } from './components/OutcomeList';
 import { useActiveTab } from './hooks/useActiveTab';
 import { useJobEntry } from './hooks/useJobEntry';
 
@@ -15,15 +19,15 @@ type Phase =
   | { state: 'checking' }
   | { state: 'unconfigured'; missing: 'settings' | 'profile' }
   | { state: 'ready' }
-  | { state: 'busy'; step: 'scanning' | 'mapping' | 'filling' }
+  | { state: 'busy'; step: FillPhase }
   | { state: 'done'; result: FillResult }
-  | { state: 'error'; message: string };
+  | { state: 'error'; error: ErrorPayload };
 
-const STEP_LABELS = {
-  scanning: 'Scanning the page…',
-  mapping: 'Asking your LLM to map the form…',
-  filling: 'Filling…',
-} as const;
+const STEPS: { key: FillPhase; label: string }[] = [
+  { key: 'scanning', label: 'Scan' },
+  { key: 'mapping', label: 'Map' },
+  { key: 'filling', label: 'Fill' },
+];
 
 export function App() {
   const [phase, setPhase] = useState<Phase>({ state: 'checking' });
@@ -80,14 +84,12 @@ export function App() {
           },
         });
       } else {
-        setPhase({ state: 'error', message: outcome.error.message });
+        setPhase({ state: 'error', error: outcome.error });
       }
     } catch (error) {
-      setPhase({ state: 'error', message: String(error) });
+      setPhase({ state: 'error', error: { message: String(error), kind: 'provider' } });
     }
   }
-
-  const openOptions = () => void browser.runtime.openOptionsPage();
 
   if (phase.state === 'checking') return null;
 
@@ -102,7 +104,10 @@ export function App() {
                 ? 'Configure your LLM provider first.'
                 : 'Upload your CV to build a profile first.'}
             </p>
-            <button className="primary" onClick={openOptions}>
+            <button
+              className="primary"
+              onClick={() => void browser.runtime.openOptionsPage()}
+            >
               Open settings
             </button>
           </div>
@@ -135,14 +140,18 @@ export function App() {
               >
                 {phase.state === 'done' ? 'Fill again' : 'Fill this page'}
               </button>
-              {phase.state === 'busy' && (
-                <p className="muted">{STEP_LABELS[phase.step]}</p>
+
+              {phase.state === 'busy' && <StepIndicator current={phase.step} />}
+              {phase.state === 'done' && <OutcomeList result={phase.result} />}
+              {phase.state === 'error' && (
+                <ErrorNotice error={phase.error} onRetry={() => void fill()} />
               )}
-              {phase.state === 'error' && <p className="error">{phase.message}</p>}
-              {phase.state === 'done' && <Summary result={phase.result} />}
-              <p className="muted small">
-                Fields are filled and highlighted — nothing is ever submitted for you.
-              </p>
+
+              {phase.state !== 'done' && (
+                <p className="muted small">
+                  Fields are filled and highlighted — nothing is ever submitted for you.
+                </p>
+              )}
             </div>
           </section>
         </>
@@ -164,31 +173,31 @@ function PanelHeader() {
   return (
     <header className="panel-header">
       <h1>AutoApply</h1>
+      <button
+        className="settings-link"
+        title="Settings"
+        onClick={() => void browser.runtime.openOptionsPage()}
+      >
+        Settings
+      </button>
     </header>
   );
 }
 
-function Summary({ result }: { result: FillResult }) {
-  const count = (outcome: string) =>
-    result.outcomes.filter((entry) => entry.outcome === outcome).length;
-  const manual = result.outcomes.filter(
-    (entry) => entry.outcome === 'needs-manual' || entry.outcome === 'failed',
-  );
-
+function StepIndicator({ current }: { current: FillPhase }) {
+  const currentIndex = STEPS.findIndex((step) => step.key === current);
   return (
-    <div className="summary">
-      <p>
-        <strong>{count('filled')}</strong> filled · {count('skipped')} skipped ·{' '}
-        {manual.length} need your attention
-      </p>
-      {manual.length > 0 && (
-        <ul className="manual-list">
-          {manual.map((entry) => (
-            <li key={entry.id}>{entry.label || 'Unlabeled field'}</li>
-          ))}
-        </ul>
-      )}
-      <p className="muted small">Review the form, then submit it yourself.</p>
-    </div>
+    <ol className="steps" aria-label="Fill progress">
+      {STEPS.map((step, index) => (
+        <li
+          key={step.key}
+          className={
+            index < currentIndex ? 'done' : index === currentIndex ? 'active' : ''
+          }
+        >
+          {step.label}
+        </li>
+      ))}
+    </ol>
   );
 }

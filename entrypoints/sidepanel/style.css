@@ -1,44 +1,6 @@
-:root {
-  --bg: #f7f7f8;
-  --surface: #ffffff;
-  --border: #d9d9e0;
-  --text: #1a1a24;
-  --muted: #6b6b7b;
-  --accent: #4353ff;
-  --accent-text: #ffffff;
-  --success: #1a7f37;
-  --error: #b42318;
-  --warning: #b54708;
-}
+@import '../../assets/theme.css';
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #16161d;
-    --surface: #1f1f29;
-    --border: #34343f;
-    --text: #ececf1;
-    --muted: #9a9aab;
-    --accent: #6b78ff;
-  }
-}
-
-* {
-  box-sizing: border-box;
-}
-
-body {
-  margin: 0;
-  background: var(--bg);
-  color: var(--text);
-  font-family:
-    system-ui,
-    -apple-system,
-    'Segoe UI',
-    Roboto,
-    sans-serif;
-  font-size: 14px;
-  line-height: 1.5;
-}
+/* Side-panel layout — tuned for 300–420 px widths (Firefox sidebars are narrow). */
 
 .panel {
   min-height: 100vh;
@@ -48,9 +10,29 @@ body {
   gap: 12px;
 }
 
+.panel-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .panel-header h1 {
   font-size: 16px;
   margin: 0;
+}
+
+.panel-header .settings-link {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.panel-header .settings-link:hover {
+  color: var(--text);
 }
 
 .section {
@@ -119,88 +101,68 @@ body {
   text-decoration: underline;
 }
 
-.field {
+.panel button.primary,
+.panel button.secondary {
+  width: 100%;
+}
+
+/* Fill progress steps */
+
+.steps {
+  list-style: none;
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-bottom: 12px;
+  gap: 6px;
+  margin: 12px 0 0;
+  padding: 0;
 }
 
-.field label {
+.steps li {
+  flex: 1;
+  text-align: center;
+  font-size: 11px;
+  color: var(--muted);
+  padding-top: 6px;
+  border-top: 3px solid var(--border);
+}
+
+.steps li.active {
+  color: var(--accent);
+  border-top-color: var(--accent);
   font-weight: 600;
+}
+
+.steps li.done {
+  color: var(--success);
+  border-top-color: var(--success);
+}
+
+/* Outcome list */
+
+.summary {
+  margin-top: 12px;
+}
+
+.summary-counts {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.attention-list {
+  list-style: none;
+  margin: 8px 0;
+  padding: 0;
+}
+
+.attention-list li {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 6px 8px;
+  border-left: 3px solid var(--warning);
+  background: color-mix(in srgb, var(--warning) 7%, var(--surface));
+  border-radius: 0 6px 6px 0;
+  margin-bottom: 4px;
   font-size: 13px;
-}
-
-.field .hint,
-.hint {
-  color: var(--muted);
-  font-size: 12px;
-}
-
-input[type='text'],
-textarea {
-  width: 100%;
-  padding: 8px 10px;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--bg);
-  color: var(--text);
-  font: inherit;
-}
-
-textarea {
-  resize: vertical;
-}
-
-input:focus-visible,
-textarea:focus-visible,
-button:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: -1px;
-}
-
-.muted {
-  color: var(--muted);
-}
-
-.small {
-  font-size: 12px;
-}
-
-.error {
-  color: var(--error);
-}
-
-button.primary,
-button.secondary {
-  appearance: none;
-  font: inherit;
-  font-weight: 600;
-  padding: 8px 16px;
-  border-radius: 6px;
-  cursor: pointer;
-  border: 1px solid transparent;
-  width: 100%;
-}
-
-button.primary {
-  background: var(--accent);
-  color: var(--accent-text);
-}
-
-button.secondary {
-  background: none;
-  color: var(--text);
-  border-color: var(--border);
-}
-
-button:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-
-.manual-list {
-  margin: 4px 0;
-  padding-left: 18px;
-  color: var(--muted);
 }
