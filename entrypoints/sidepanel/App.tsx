@@ -4,6 +4,10 @@ import { runFill } from '../../lib/fill/orchestrate';
 import type { FillResult } from '../../lib/fill/types';
 import { loadProfile } from '../../lib/storage/profile';
 import { loadLlmSettings } from '../../lib/storage/settings';
+import { ContextSection } from './components/ContextSection';
+import { JobHeader } from './components/JobHeader';
+import { NotesSection } from './components/NotesSection';
+import { useJobEntry } from './hooks/useJobEntry';
 
 type Phase =
   | { state: 'checking' }
@@ -21,23 +25,45 @@ const STEP_LABELS = {
 
 export function App() {
   const [phase, setPhase] = useState<Phase>({ state: 'checking' });
+  const [tabId, setTabId] = useState<number | null>(null);
+  const [url, setUrl] = useState<string | null>(null);
+  const { entry, extracting, updateContext, updateNotes, reextract } = useJobEntry(
+    tabId,
+    url,
+  );
 
   useEffect(() => {
     void (async () => {
       const [settings, profile] = await Promise.all([loadLlmSettings(), loadProfile()]);
-      if (!settings) setPhase({ state: 'unconfigured', missing: 'settings' });
-      else if (!profile) setPhase({ state: 'unconfigured', missing: 'profile' });
-      else setPhase({ state: 'ready' });
+      if (!settings) {
+        setPhase({ state: 'unconfigured', missing: 'settings' });
+        return;
+      }
+      if (!profile) {
+        setPhase({ state: 'unconfigured', missing: 'profile' });
+        return;
+      }
+      const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
+      if (tab?.id && tab.url?.startsWith('http')) {
+        setTabId(tab.id);
+        setUrl(tab.url);
+      }
+      setPhase({ state: 'ready' });
     })();
   }, []);
 
   async function fill() {
+    if (tabId === null) return;
     try {
-      const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
-      if (!tab?.id) throw new Error('No active tab.');
-
-      const outcome = await runFill(tab.id, undefined, (step) =>
-        setPhase({ state: 'busy', step }),
+      const outcome = await runFill(
+        tabId,
+        {
+          title: entry.context.title,
+          company: entry.context.company,
+          description: entry.context.description,
+          notes: entry.notes || undefined,
+        },
+        (step) => setPhase({ state: 'busy', step }),
       );
       if (outcome.ok) setPhase({ state: 'done', result: outcome.result });
       else setPhase({ state: 'error', message: outcome.error.message });
@@ -48,60 +74,83 @@ export function App() {
 
   const openOptions = () => void browser.runtime.openOptionsPage();
 
+  if (phase.state === 'checking') return null;
+
+  if (phase.state === 'unconfigured') {
+    return (
+      <main className="panel">
+        <PanelHeader />
+        <section className="section">
+          <div className="section-body">
+            <p>
+              {phase.missing === 'settings'
+                ? 'Configure your LLM provider first.'
+                : 'Upload your CV to build a profile first.'}
+            </p>
+            <button className="primary" onClick={openOptions}>
+              Open settings
+            </button>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
   return (
     <main className="panel">
-      <header className="panel-header">
-        <h1>AutoApply</h1>
-      </header>
+      <PanelHeader />
 
-      {phase.state === 'unconfigured' && (
-        <section className="section">
-          <p>
-            {phase.missing === 'settings'
-              ? 'Configure your LLM provider first.'
-              : 'Upload your CV to build a profile first.'}
-          </p>
-          <button className="primary" onClick={openOptions}>
-            Open settings
-          </button>
-        </section>
-      )}
+      {url ? (
+        <>
+          <JobHeader context={entry.context} url={url} />
+          <ContextSection
+            context={entry.context}
+            extracting={extracting}
+            onChange={updateContext}
+            onReextract={reextract}
+          />
+          <NotesSection notes={entry.notes} onChange={updateNotes} />
 
-      {(phase.state === 'ready' || phase.state === 'busy') && (
+          <section className="section">
+            <div className="section-body">
+              <button
+                className="primary"
+                disabled={phase.state === 'busy'}
+                onClick={() => void fill()}
+              >
+                {phase.state === 'done' ? 'Fill again' : 'Fill this page'}
+              </button>
+              {phase.state === 'busy' && (
+                <p className="muted">{STEP_LABELS[phase.step]}</p>
+              )}
+              {phase.state === 'error' && <p className="error">{phase.message}</p>}
+              {phase.state === 'done' && <Summary result={phase.result} />}
+              <p className="muted small">
+                Fields are filled and highlighted — nothing is ever submitted for you.
+              </p>
+            </div>
+          </section>
+        </>
+      ) : (
         <section className="section">
-          <button
-            className="primary"
-            disabled={phase.state === 'busy'}
-            onClick={() => void fill()}
-          >
-            Fill this page
-          </button>
-          {phase.state === 'busy' && <p className="muted">{STEP_LABELS[phase.step]}</p>}
-          <p className="muted small">
-            Fields are filled and highlighted — nothing is ever submitted for you.
-          </p>
-        </section>
-      )}
-
-      {phase.state === 'done' && (
-        <section className="section">
-          <Summary result={phase.result} onAgain={fill} />
-        </section>
-      )}
-
-      {phase.state === 'error' && (
-        <section className="section">
-          <p className="error">{phase.message}</p>
-          <button className="primary" onClick={() => void fill()}>
-            Try again
-          </button>
+          <div className="section-body">
+            <p className="muted">Open a job posting in this tab to get started.</p>
+          </div>
         </section>
       )}
     </main>
   );
 }
 
-function Summary({ result, onAgain }: { result: FillResult; onAgain: () => void }) {
+function PanelHeader() {
+  return (
+    <header className="panel-header">
+      <h1>AutoApply</h1>
+    </header>
+  );
+}
+
+function Summary({ result }: { result: FillResult }) {
   const count = (outcome: string) =>
     result.outcomes.filter((entry) => entry.outcome === outcome).length;
   const manual = result.outcomes.filter(
@@ -109,7 +158,7 @@ function Summary({ result, onAgain }: { result: FillResult; onAgain: () => void 
   );
 
   return (
-    <>
+    <div className="summary">
       <p>
         <strong>{count('filled')}</strong> filled · {count('skipped')} skipped ·{' '}
         {manual.length} need your attention
@@ -122,9 +171,6 @@ function Summary({ result, onAgain }: { result: FillResult; onAgain: () => void 
         </ul>
       )}
       <p className="muted small">Review the form, then submit it yourself.</p>
-      <button className="secondary" onClick={onAgain}>
-        Fill again
-      </button>
-    </>
+    </div>
   );
 }
