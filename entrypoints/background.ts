@@ -1,4 +1,13 @@
+import { browser } from 'wxt/browser';
+import { handleBackgroundMessage } from '../lib/background/handlers';
+import type { BackgroundRequest } from '../lib/messaging/protocol';
+
 export default defineBackground(() => {
-  // Message routing is added as features land; the background service worker
-  // is the only place allowed to hold the API key and talk to LLM providers.
+  browser.runtime.onMessage.addListener(
+    (message: unknown, _sender, sendResponse: (response: unknown) => void) => {
+      handleBackgroundMessage(message as BackgroundRequest).then(sendResponse);
+      // Keep the channel open for the async response (required in Chrome).
+      return true;
+    },
+  );
 });
