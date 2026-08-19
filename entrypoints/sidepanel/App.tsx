@@ -7,6 +7,7 @@ import { loadLlmSettings } from '../../lib/storage/settings';
 import { ContextSection } from './components/ContextSection';
 import { JobHeader } from './components/JobHeader';
 import { NotesSection } from './components/NotesSection';
+import { useActiveTab } from './hooks/useActiveTab';
 import { useJobEntry } from './hooks/useJobEntry';
 
 type Phase =
@@ -25,35 +26,32 @@ const STEP_LABELS = {
 
 export function App() {
   const [phase, setPhase] = useState<Phase>({ state: 'checking' });
-  const [tabId, setTabId] = useState<number | null>(null);
-  const [url, setUrl] = useState<string | null>(null);
+  const { tabId, url } = useActiveTab();
   const { entry, extracting, updateContext, updateNotes, reextract } = useJobEntry(
     tabId,
     url,
   );
 
+  // A navigation or tab switch invalidates any fill result on screen.
+  const [lastUrl, setLastUrl] = useState<string | null>(url);
+  if (lastUrl !== url) {
+    setLastUrl(url);
+    if (phase.state === 'done' || phase.state === 'error' || phase.state === 'busy') {
+      setPhase({ state: 'ready' });
+    }
+  }
+
   useEffect(() => {
     void (async () => {
       const [settings, profile] = await Promise.all([loadLlmSettings(), loadProfile()]);
-      if (!settings) {
-        setPhase({ state: 'unconfigured', missing: 'settings' });
-        return;
-      }
-      if (!profile) {
-        setPhase({ state: 'unconfigured', missing: 'profile' });
-        return;
-      }
-      const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
-      if (tab?.id && tab.url?.startsWith('http')) {
-        setTabId(tab.id);
-        setUrl(tab.url);
-      }
-      setPhase({ state: 'ready' });
+      if (!settings) setPhase({ state: 'unconfigured', missing: 'settings' });
+      else if (!profile) setPhase({ state: 'unconfigured', missing: 'profile' });
+      else setPhase({ state: 'ready' });
     })();
   }, []);
 
   async function fill() {
-    if (tabId === null) return;
+    if (tabId === null || !url) return;
     try {
       const outcome = await runFill(
         tabId,
@@ -134,7 +132,10 @@ export function App() {
       ) : (
         <section className="section">
           <div className="section-body">
-            <p className="muted">Open a job posting in this tab to get started.</p>
+            <p className="muted">
+              Switch to a tab with a job posting to get started — the panel follows your
+              active tab.
+            </p>
           </div>
         </section>
       )}
