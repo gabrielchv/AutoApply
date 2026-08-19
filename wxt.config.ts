@@ -6,6 +6,9 @@ export default defineConfig({
     name: 'AutoApply',
     description:
       'Fill job application forms with your own LLM API key. Local-first, no backend.',
+    // No default_popup: the action click opens the side panel instead
+    // (Chrome via setPanelBehavior, Firefox via sidebarAction.toggle).
+    action: { default_title: 'AutoApply' },
     permissions: ['storage', 'activeTab', 'webNavigation'],
     // Content scripts must run on any job site, and the background worker
     // must reach whatever LLM base URL the user configures.

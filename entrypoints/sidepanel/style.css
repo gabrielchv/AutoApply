@@ -1,21 +1,29 @@
 :root {
-  --bg: #ffffff;
+  --bg: #f7f7f8;
+  --surface: #ffffff;
+  --border: #d9d9e0;
   --text: #1a1a24;
   --muted: #6b6b7b;
   --accent: #4353ff;
   --accent-text: #ffffff;
-  --border: #d9d9e0;
+  --success: #1a7f37;
   --error: #b42318;
+  --warning: #b54708;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #1f1f29;
+    --bg: #16161d;
+    --surface: #1f1f29;
+    --border: #34343f;
     --text: #ececf1;
     --muted: #9a9aab;
     --accent: #6b78ff;
-    --border: #34343f;
   }
+}
+
+* {
+  box-sizing: border-box;
 }
 
 body {
@@ -29,20 +37,27 @@ body {
     Roboto,
     sans-serif;
   font-size: 14px;
+  line-height: 1.5;
 }
 
-.popup {
-  min-width: 280px;
-  padding: 16px;
+.panel {
+  min-height: 100vh;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.popup h1 {
+.panel-header h1 {
   font-size: 16px;
-  margin: 0 0 12px;
+  margin: 0;
 }
 
-.popup p {
-  margin: 8px 0;
+.section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
 }
 
 .muted {
