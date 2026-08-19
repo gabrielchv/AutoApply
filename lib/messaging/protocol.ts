@@ -1,6 +1,6 @@
 import { browser } from 'wxt/browser';
 import type { FillPlan, FillResult } from '../fill/types';
-import type { ExtractedJobContext } from '../jobContext/types';
+import type { ExtractedJobContext, JobContextForPrompt } from '../jobContext/types';
 import type { LlmSettings } from '../llm/types';
 import type { ProfileContent } from '../profile/schema';
 import type { PageContext, ScrapedField } from '../scrape/types';
@@ -16,6 +16,8 @@ export interface MapFormRequest {
   type: 'MAP_FORM';
   fields: ScrapedField[];
   pageContext: PageContext;
+  /** Extracted posting context + candidate notes; sharpens open answers. */
+  jobContext?: JobContextForPrompt;
 }
 
 export interface StructureCvRequest {

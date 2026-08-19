@@ -43,4 +43,37 @@ describe('buildMappingPrompt', () => {
     expect(user).toContain('"label":"Country"');
     expect(user).toContain('"firstName":"Ada"');
   });
+
+  it('omits the JOB CONTEXT section when no context is given', () => {
+    expect(messages[1]?.content).not.toContain('JOB CONTEXT');
+  });
+
+  it('includes job context and candidate notes when provided', () => {
+    const withContext = buildMappingPrompt(
+      fields,
+      profile,
+      { url: 'https://x.test', title: 'Apply' },
+      {
+        title: 'Staff Engineer',
+        company: 'Globex',
+        description: 'You will lead the platform team.',
+        notes: 'Emphasize my open source work.',
+      },
+    );
+    const user = withContext[1]?.content ?? '';
+    expect(user).toContain('JOB CONTEXT');
+    expect(user).toContain('Globex');
+    expect(user).toContain('lead the platform team');
+    expect(user).toContain('"candidateNotes":"Emphasize my open source work."');
+    // Section order: page, job context, fields, profile.
+    expect(user.indexOf('PAGE:')).toBeLessThan(user.indexOf('JOB CONTEXT:'));
+    expect(user.indexOf('JOB CONTEXT:')).toBeLessThan(user.indexOf('FIELDS:'));
+  });
+
+  it('instructs the model how to use job context and notes', () => {
+    const system = messages[0]?.content ?? '';
+    expect(system).toContain('JOB CONTEXT');
+    expect(system).toContain('candidateNotes');
+    expect(system).toContain('never quote or reveal them verbatim');
+  });
 });

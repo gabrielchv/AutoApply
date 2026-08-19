@@ -1,5 +1,6 @@
 import { fillPlanSchema, sanitizePlan } from '../fill/planSchema';
 import type { FillPlan } from '../fill/types';
+import type { JobContextForPrompt } from '../jobContext/types';
 import { complete } from '../llm/client';
 import type { LlmMessage, LlmSettings } from '../llm/types';
 import { LlmError } from '../llm/types';
@@ -83,6 +84,7 @@ async function handleStructureCv(rawText: string): Promise<Result<ProfileContent
 async function handleMapForm(
   fields: ScrapedField[],
   pageContext: PageContext,
+  jobContext?: JobContextForPrompt,
 ): Promise<Result<FillPlan>> {
   const settings = await requireSettings();
   if (!settings.ok) return settings;
@@ -96,7 +98,10 @@ async function handleMapForm(
   try {
     const plan = await parseWithRetry(
       fillPlanSchema,
-      llmJsonCall(settings.value, buildMappingPrompt(fields, profile, pageContext)),
+      llmJsonCall(
+        settings.value,
+        buildMappingPrompt(fields, profile, pageContext, jobContext),
+      ),
     );
     return ok(
       sanitizePlan(
@@ -147,6 +152,10 @@ export async function handleBackgroundMessage<M extends BackgroundRequest>(
     case 'STRUCTURE_CV':
       return (await handleStructureCv(message.rawText)) as ResponseFor<M>;
     case 'MAP_FORM':
-      return (await handleMapForm(message.fields, message.pageContext)) as ResponseFor<M>;
+      return (await handleMapForm(
+        message.fields,
+        message.pageContext,
+        message.jobContext,
+      )) as ResponseFor<M>;
   }
 }
