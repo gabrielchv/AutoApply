@@ -13,7 +13,17 @@ type Status =
   | { state: 'success'; message: string }
   | { state: 'error'; message: string };
 
-export function ProfileTab() {
+interface ProfileTabProps {
+  hasProvider: boolean;
+  onSaved: () => void;
+  onConfigureProvider: () => void;
+}
+
+export function ProfileTab({
+  hasProvider,
+  onSaved,
+  onConfigureProvider,
+}: ProfileTabProps) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [status, setStatus] = useState<Status>({ state: 'idle' });
@@ -59,6 +69,7 @@ export function ProfileTab() {
       };
       await saveProfile(next);
       setProfile(next);
+      onSaved();
       setStatus({
         state: 'success',
         message:
@@ -77,15 +88,33 @@ export function ProfileTab() {
     };
     await saveProfile(next);
     setProfile(next);
+    onSaved();
     setStatus({ state: 'success', message: 'Profile saved.' });
   }
 
   if (!loaded) return null;
 
+  if (!hasProvider) {
+    return (
+      <div className="card">
+        <h2>Step 2 — your CV</h2>
+        <div className="note">
+          <strong>Connect your LLM provider first.</strong>
+          <p className="hint">
+            Reading your CV is itself an LLM call, so step 1 has to come first.
+          </p>
+          <button className="primary" onClick={onConfigureProvider}>
+            Go to step 1
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       <div className="card">
-        <h2>Résumé / CV</h2>
+        <h2>Step 2 — your CV</h2>
         <p className="hint">
           Upload your CV as PDF (or your LinkedIn profile exported as PDF). It is parsed
           locally; only the extracted text is sent to your configured LLM — once — to

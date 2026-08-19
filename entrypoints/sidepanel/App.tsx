@@ -100,15 +100,22 @@ export function App() {
         <section className="section">
           <div className="section-body">
             <p>
+              <strong>
+                {phase.missing === 'settings'
+                  ? 'Step 1: connect your LLM provider.'
+                  : 'Step 2: upload your CV.'}
+              </strong>
+            </p>
+            <p className="muted small">
               {phase.missing === 'settings'
-                ? 'Configure your LLM provider first.'
-                : 'Upload your CV to build a profile first.'}
+                ? 'AutoApply runs on your own API key — add it, then upload your CV.'
+                : 'Your provider is ready. AutoApply needs your CV to know what to fill in.'}
             </p>
             <button
               className="primary"
               onClick={() => void browser.runtime.openOptionsPage()}
             >
-              Open settings
+              {phase.missing === 'settings' ? 'Add your API key' : 'Upload your CV'}
             </button>
           </div>
         </section>

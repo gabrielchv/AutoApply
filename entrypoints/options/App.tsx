@@ -2,11 +2,19 @@ import { useState } from 'react';
 import { HistoryTab } from './HistoryTab';
 import { ProfileTab } from './ProfileTab';
 import { SettingsTab } from './SettingsTab';
+import { useSetupStatus } from './useSetupStatus';
 
-type Tab = 'profile' | 'history' | 'settings';
+type Tab = 'provider' | 'cv' | 'history';
 
 export function App() {
-  const [tab, setTab] = useState<Tab>('profile');
+  const { status, refresh } = useSetupStatus();
+  const [tab, setTab] = useState<Tab | null>(null);
+
+  if (!status) return null;
+
+  // Land on the first unfinished step: the provider key comes before the CV,
+  // because structuring a CV needs a working LLM.
+  const activeTab: Tab = tab ?? (!status.hasProvider ? 'provider' : 'cv');
 
   return (
     <div className="page">
@@ -14,29 +22,44 @@ export function App() {
         <h1>AutoApply</h1>
         <p>Local-first job form filling with your own LLM key.</p>
       </header>
+
       <nav className="tabs">
         <button
-          className={tab === 'profile' ? 'active' : ''}
-          onClick={() => setTab('profile')}
+          className={activeTab === 'provider' ? 'active' : ''}
+          onClick={() => setTab('provider')}
         >
-          Profile
+          <span className="step-number">1</span> LLM provider
+          {status.hasProvider && <span className="step-check">✓</span>}
         </button>
         <button
-          className={tab === 'history' ? 'active' : ''}
+          className={activeTab === 'cv' ? 'active' : ''}
+          onClick={() => setTab('cv')}
+        >
+          <span className="step-number">2</span> Your CV
+          {status.hasProfile && <span className="step-check">✓</span>}
+        </button>
+        <button
+          className={activeTab === 'history' ? 'active' : ''}
           onClick={() => setTab('history')}
         >
           History
         </button>
-        <button
-          className={tab === 'settings' ? 'active' : ''}
-          onClick={() => setTab('settings')}
-        >
-          Settings
-        </button>
       </nav>
-      {tab === 'profile' && <ProfileTab />}
-      {tab === 'history' && <HistoryTab />}
-      {tab === 'settings' && <SettingsTab />}
+
+      {activeTab === 'provider' && (
+        <SettingsTab
+          onSaved={() => void refresh()}
+          nextStep={status.hasProfile ? null : () => setTab('cv')}
+        />
+      )}
+      {activeTab === 'cv' && (
+        <ProfileTab
+          hasProvider={status.hasProvider}
+          onSaved={() => void refresh()}
+          onConfigureProvider={() => setTab('provider')}
+        />
+      )}
+      {activeTab === 'history' && <HistoryTab />}
     </div>
   );
 }

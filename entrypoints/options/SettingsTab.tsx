@@ -12,7 +12,13 @@ type Status =
 
 const CUSTOM = 'custom';
 
-export function SettingsTab() {
+interface SettingsTabProps {
+  onSaved: () => void;
+  /** Set when the CV step is still pending — offers it as the next action. */
+  nextStep: (() => void) | null;
+}
+
+export function SettingsTab({ onSaved, nextStep }: SettingsTabProps) {
   const [presetId, setPresetId] = useState<string>(CUSTOM);
   const [format, setFormat] = useState<LlmFormat>('openai');
   const [baseUrl, setBaseUrl] = useState('');
@@ -55,10 +61,14 @@ export function SettingsTab() {
 
   const incomplete = !baseUrl.trim() || !model.trim();
 
+  const [saved, setSaved] = useState(false);
+
   async function handleSave() {
     setStatus({ state: 'busy', message: 'Saving…' });
     await saveLlmSettings(currentSettings());
     setStatus({ state: 'success', message: 'Saved.' });
+    setSaved(true);
+    onSaved();
   }
 
   async function handleTest() {
@@ -78,6 +88,12 @@ export function SettingsTab() {
 
   return (
     <div className="card">
+      <h2>Step 1 — connect your LLM</h2>
+      <p className="hint">
+        AutoApply runs on your own API key. Nothing works until this step is done: reading
+        your CV and filling forms both go through the provider you pick here.
+      </p>
+
       <div className="field">
         <label htmlFor="preset">Provider preset</label>
         <select
@@ -178,6 +194,18 @@ export function SettingsTab() {
           </span>
         )}
       </div>
+
+      {saved && nextStep && (
+        <div className="next-step">
+          <div>
+            <strong>Provider ready.</strong>
+            <p className="hint">Next: upload your CV so AutoApply knows about you.</p>
+          </div>
+          <button className="primary" onClick={nextStep}>
+            Continue to step 2
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -37,6 +37,49 @@
   margin-bottom: -1px;
 }
 
+.step-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid currentColor;
+  font-size: 11px;
+  margin-right: 6px;
+  vertical-align: 1px;
+}
+
+.step-check {
+  color: var(--success);
+  margin-left: 6px;
+  font-weight: 700;
+}
+
+.next-step {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 20px;
+  padding: 14px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--success) 35%, var(--border));
+  background: color-mix(in srgb, var(--success) 7%, var(--surface));
+}
+
+.next-step p {
+  margin: 2px 0 0;
+}
+
+.next-step button {
+  flex-shrink: 0;
+}
+
+.note button {
+  margin-top: 10px;
+}
+
 .tabs button.active {
   color: var(--text);
   border-bottom-color: var(--accent);
