@@ -1,0 +1,153 @@
+import { useEffect, useRef, useState } from 'react';
+import { sendToBackground } from '../../lib/messaging/protocol';
+import { extractPdfText } from '../../lib/pdf/extractText';
+import { emptyProfile } from '../../lib/profile/empty';
+import type { Profile } from '../../lib/profile/schema';
+import { saveCvFile } from '../../lib/storage/cvFile';
+import { loadProfile, saveProfile } from '../../lib/storage/profile';
+import { ProfileEditor } from './ProfileEditor';
+
+type Status =
+  | { state: 'idle' }
+  | { state: 'busy'; message: string }
+  | { state: 'success'; message: string }
+  | { state: 'error'; message: string };
+
+export function ProfileTab() {
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [loaded, setLoaded] = useState(false);
+  const [status, setStatus] = useState<Status>({ state: 'idle' });
+  const fileInput = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    void loadProfile().then((stored) => {
+      setProfile(stored);
+      setLoaded(true);
+    });
+  }, []);
+
+  async function ingest(file: File) {
+    try {
+      setStatus({ state: 'busy', message: 'Reading PDF…' });
+      const bytes = await file.arrayBuffer();
+      // Keep the original for later re-attachment to job forms' file inputs.
+      await saveCvFile({
+        // pdf.js transfers the buffer it receives to its worker, so give it
+        // its own copy and store the pristine one.
+        bytes,
+        fileName: file.name,
+        mimeType: file.type || 'application/pdf',
+      });
+      const text = await extractPdfText(bytes.slice(0));
+
+      setStatus({ state: 'busy', message: 'Asking the LLM to structure your CV…' });
+      const result = await sendToBackground({ type: 'STRUCTURE_CV', rawText: text });
+      if (!result.ok) {
+        setStatus({ state: 'error', message: result.error.message });
+        return;
+      }
+
+      const now = new Date().toISOString();
+      const next: Profile = {
+        ...result.value,
+        meta: {
+          version: 1,
+          createdAt: profile?.meta.createdAt ?? now,
+          updatedAt: now,
+          sourceFileName: file.name,
+        },
+      };
+      await saveProfile(next);
+      setProfile(next);
+      setStatus({
+        state: 'success',
+        message:
+          'Profile created. Review and correct it below — it is the source of truth for filling.',
+      });
+    } catch (error) {
+      setStatus({ state: 'error', message: String(error) });
+    }
+  }
+
+  async function handleSave() {
+    if (!profile) return;
+    const next = {
+      ...profile,
+      meta: { ...profile.meta, updatedAt: new Date().toISOString() },
+    };
+    await saveProfile(next);
+    setProfile(next);
+    setStatus({ state: 'success', message: 'Profile saved.' });
+  }
+
+  if (!loaded) return null;
+
+  return (
+    <>
+      <div className="card">
+        <h2>Résumé / CV</h2>
+        <p className="hint">
+          Upload your CV as PDF (or your LinkedIn profile exported as PDF). It is parsed
+          locally; only the extracted text is sent to your configured LLM — once — to
+          build the structured profile below. The original file is kept so it can be
+          attached to application forms.
+        </p>
+        <div className="actions">
+          <input
+            ref={fileInput}
+            type="file"
+            accept="application/pdf,.pdf"
+            style={{ display: 'none' }}
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (file) void ingest(file);
+              event.target.value = '';
+            }}
+          />
+          <button
+            className="primary"
+            disabled={status.state === 'busy'}
+            onClick={() => fileInput.current?.click()}
+          >
+            {profile ? 'Re-upload CV' : 'Upload CV (PDF)'}
+          </button>
+          {!profile && (
+            <button
+              className="secondary"
+              onClick={() => {
+                const now = new Date().toISOString();
+                setProfile(emptyProfile(now));
+              }}
+            >
+              Start from scratch
+            </button>
+          )}
+          {status.state !== 'idle' && (
+            <span
+              className={`status ${
+                status.state === 'busy'
+                  ? 'muted'
+                  : status.state === 'success'
+                    ? 'success'
+                    : 'error'
+              }`}
+            >
+              {status.message}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {profile && (
+        <>
+          <ProfileEditor profile={profile} onChange={setProfile} />
+          <div className="actions">
+            <button className="primary" onClick={() => void handleSave()}>
+              Save profile
+            </button>
+          </div>
+        </>
+      )}
+    </>
+  );
+}

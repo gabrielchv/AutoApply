@@ -191,6 +191,22 @@ button:disabled {
   color: var(--muted);
 }
 
+.card h2 {
+  font-size: 15px;
+  margin: 0 0 12px;
+}
+
+.subcard {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+button.danger {
+  color: var(--error);
+}
+
 .note {
   background: color-mix(in srgb, var(--warning) 8%, var(--surface));
   border: 1px solid color-mix(in srgb, var(--warning) 30%, var(--border));

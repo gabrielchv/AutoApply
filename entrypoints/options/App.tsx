@@ -1,10 +1,11 @@
 import { useState } from 'react';
+import { ProfileTab } from './ProfileTab';
 import { SettingsTab } from './SettingsTab';
 
 type Tab = 'profile' | 'settings';
 
 export function App() {
-  const [tab, setTab] = useState<Tab>('settings');
+  const [tab, setTab] = useState<Tab>('profile');
 
   return (
     <div className="page">
@@ -26,15 +27,7 @@ export function App() {
           Settings
         </button>
       </nav>
-      {tab === 'profile' ? (
-        <div className="card">
-          <p className="status muted">
-            Profile upload and editing arrives with the ingestion feature.
-          </p>
-        </div>
-      ) : (
-        <SettingsTab />
-      )}
+      {tab === 'profile' ? <ProfileTab /> : <SettingsTab />}
     </div>
   );
 }
