@@ -20,6 +20,21 @@ describe('messaging protocol', () => {
     expect(response).toEqual({ ok: true, value: null });
   });
 
+  it('types EXTRACT_JOB_CONTEXT as a content request returning job context', async () => {
+    fakeBrowser.runtime.onMessage.addListener((message: unknown) => {
+      if ((message as { type: string }).type === 'EXTRACT_JOB_CONTEXT') {
+        return Promise.resolve({ title: 'Dev', source: 'json-ld' });
+      }
+      return undefined;
+    });
+
+    // fakeBrowser routes tabs.sendMessage through the same listener set.
+    const response = await fakeBrowser.runtime.sendMessage({
+      type: 'EXTRACT_JOB_CONTEXT',
+    });
+    expect(response).toEqual({ title: 'Dev', source: 'json-ld' });
+  });
+
   it('builds ok and err results', () => {
     expect(ok(42)).toEqual({ ok: true, value: 42 });
     expect(err({ message: 'nope', kind: 'not-configured' })).toEqual({

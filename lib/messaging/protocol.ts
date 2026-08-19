@@ -1,5 +1,6 @@
 import { browser } from 'wxt/browser';
 import type { FillPlan, FillResult } from '../fill/types';
+import type { ExtractedJobContext } from '../jobContext/types';
 import type { LlmSettings } from '../llm/types';
 import type { ProfileContent } from '../profile/schema';
 import type { PageContext, ScrapedField } from '../scrape/types';
@@ -51,7 +52,12 @@ export interface ApplyPlanRequest {
   plan: FillPlan;
 }
 
-export type ContentRequest = ScrapeRequest | ApplyPlanRequest;
+/** Answered only by the top frame — job descriptions live there. */
+export interface ExtractJobContextRequest {
+  type: 'EXTRACT_JOB_CONTEXT';
+}
+
+export type ContentRequest = ScrapeRequest | ApplyPlanRequest | ExtractJobContextRequest;
 
 // ---- Responses ----
 
@@ -92,7 +98,9 @@ export type ResponseFor<M> = M extends MapFormRequest
           ? ScrapeResult
           : M extends ApplyPlanRequest
             ? FillResult
-            : never;
+            : M extends ExtractJobContextRequest
+              ? ExtractedJobContext
+              : never;
 
 // ---- Typed send helpers ----
 

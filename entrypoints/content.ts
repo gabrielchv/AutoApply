@@ -2,6 +2,7 @@ import { browser } from 'wxt/browser';
 import { attachCvFile } from '../lib/fill/attachFile';
 import { applyPlan } from '../lib/fill/fillField';
 import type { FillResult } from '../lib/fill/types';
+import { extractJobContext } from '../lib/jobContext/extract';
 import type { ContentRequest, ScrapeResult } from '../lib/messaging/protocol';
 import { sendToBackground } from '../lib/messaging/protocol';
 import type { ScrapeOutcome } from '../lib/scrape/scrapeForm';
@@ -52,6 +53,12 @@ export default defineContentScript({
           case 'APPLY_PLAN':
             void handleApply(request.plan).then(sendResponse);
             return true;
+          case 'EXTRACT_JOB_CONTEXT':
+            // Job descriptions live in the top frame; embedded form frames
+            // stay silent so the panel gets exactly one answer.
+            if (window.top !== window) return undefined;
+            sendResponse(extractJobContext(document));
+            return undefined;
           default:
             return undefined;
         }
