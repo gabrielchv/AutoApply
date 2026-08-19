@@ -20,12 +20,95 @@ the LLM provider _you_ configured.
 - **Universal filling** — no per-site adapters. The extension reads the form's
   fields and asks the LLM to map them to your profile, including open questions
   like "Why do you want to work here?".
+- **CV attachment** — the original PDF is stored locally and attached to the form's
+  file input automatically; when a custom uploader defeats that, the field is
+  highlighted for you to attach manually.
 - **You stay in control** — filling is always manually triggered and the extension
   **never submits a form**. You review, you click send.
 
-## Status
+## Getting started
 
-Early development — v1 core in progress. See the roadmap issues.
+Until store listings exist, load AutoApply from a local build:
+
+```sh
+pnpm install
+pnpm build            # Chrome MV3 → .output/chrome-mv3
+pnpm build:firefox    # Firefox MV2 → .output/firefox-mv2
+```
+
+- **Chrome**: `chrome://extensions` → enable Developer mode → _Load unpacked_ →
+  pick `.output/chrome-mv3`.
+- **Firefox**: `about:debugging#/runtime/this-firefox` → _Load Temporary Add-on_ →
+  pick any file inside `.output/firefox-mv2`.
+
+Then:
+
+1. Open the extension's **Settings** tab, pick a provider preset, paste your API
+   key, and hit _Test connection_.
+2. In the **Profile** tab, upload your CV as PDF. The LLM structures it once;
+   review and correct the result — it is the source of truth for every fill.
+3. Open a job application page, click the AutoApply icon, and hit
+   **Fill this page**. Review the highlighted fields and submit yourself.
+
+### Provider notes
+
+| Provider                   | Notes                                                                                                                                                 |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| OpenAI / OpenRouter / Groq | Work out of the box with the preset.                                                                                                                  |
+| Anthropic                  | Direct browser calls are enabled via Anthropic's dedicated header; just paste your key.                                                               |
+| Google Gemini              | Uses Gemini's OpenAI-compatible endpoint.                                                                                                             |
+| Ollama (local)             | Start it with `OLLAMA_ORIGINS='chrome-extension://*,moz-extension://*'` so it accepts extension requests. Total privacy: nothing leaves your machine. |
+| Anything else              | Choose _Custom_ and point the base URL at any OpenAI-compatible endpoint.                                                                             |
+
+## How it works
+
+```
+options page ── PDF ──▶ pdf.js (local) ── text ──▶ background ──▶ your LLM
+     ▲                                                 │
+     └───────────── editable profile JSON ◀────────────┘
+
+popup ─▶ content script scrapes fields ─▶ background + profile ─▶ your LLM
+              ▲                                     │
+              └──────── validated fill plan ◀───────┘
+              fills, highlights, attaches CV — never submits
+```
+
+- The **profile** is a zod-validated JSON document you can edit at any time; the
+  original CV PDF is kept (IndexedDB) purely for re-attachment.
+- **Scraping** collects labels (label/aria/placeholder/nearby-text heuristics),
+  select and radio options, and required flags — the page is never mutated for
+  tracking.
+- The **fill plan** returned by the LLM is schema-validated (with one corrective
+  retry) and sanitized before a single field is touched. Values are written
+  through native setters with proper `input`/`change` events so React-style forms
+  register them.
+
+## Security model — honest edition
+
+- Your API key and profile live in `chrome.storage.local` — **not** synced to your
+  browser account, but also **not encrypted at rest**. Anyone with access to your
+  browser profile can read them; that is true of every extension storing local
+  data.
+- Only the background worker touches the key; content scripts (which run inside
+  arbitrary web pages) never see it.
+- Network traffic goes to exactly one place: the base URL you configured.
+- The extension asks for broad host permissions because job forms can live on any
+  domain and your LLM base URL is user-defined. There is no telemetry of any kind.
+- Nothing is ever submitted on your behalf — there is no code path that submits.
+
+## Current limitations
+
+- Forms inside **closed** shadow DOM are invisible to the scraper.
+- When a page splits one application across several iframes, only the richest
+  frame is filled per run.
+- Some custom upload widgets (parts of Workday, Ashby) reject programmatic file
+  attachment — you'll get an amber highlight to attach manually.
+- Multi-step wizards need one _Fill this page_ per step.
+
+## Contributing
+
+PRs welcome — see [CONTRIBUTING.md](./CONTRIBUTING.md) for the dev setup, module
+boundaries, and the manual QA checklist. The roadmap lives in the issue tracker.
 
 ## License
 
