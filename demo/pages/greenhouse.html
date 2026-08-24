@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Senior Frontend Engineer - Greenhouse Test Co</title>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "JobPosting",
+  "title": "Senior Frontend Engineer",
+  "description": "We are looking for a Senior Frontend Engineer with deep experience in React and TypeScript. You will build and maintain component libraries, and own automated testing strategies across our applications.",
+  "hiringOrganization": { "@type": "Organization", "name": "Greenhouse Test Co" }
+}
+</script>
+<style>
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: #f5f5f5;
+    margin: 0;
+    padding: 24px;
+    color: #222;
+  }
+  .card {
+    max-width: 640px;
+    margin: 0 auto;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 32px;
+  }
+  h1 {
+    font-size: 24px;
+    margin: 0 0 4px;
+  }
+  .company {
+    color: #666;
+    margin: 0 0 24px;
+    font-size: 14px;
+  }
+  form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  label {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 6px;
+  }
+  input[type="text"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="url"],
+  textarea,
+  select {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 8px 10px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+  }
+  textarea {
+    min-height: 90px;
+    resize: vertical;
+  }
+  fieldset {
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    margin: 0;
+    padding: 12px;
+  }
+  legend {
+    font-size: 14px;
+    font-weight: 600;
+    padding: 0 4px;
+  }
+  fieldset label {
+    font-weight: 400;
+    display: inline-block;
+    margin: 0 16px 0 4px;
+  }
+  .resume-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  button {
+    padding: 8px 14px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background: #f0f0f0;
+    cursor: pointer;
+  }
+  button[type="submit"] {
+    background: #00594b;
+    color: #fff;
+    border-color: #00594b;
+    font-weight: 600;
+  }
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>Senior Frontend Engineer</h1>
+  <p class="company">Greenhouse Test Co</p>
+  <form id="greenhouse-form">
+    <div>
+      <label for="first_name">First Name</label>
+      <input type="text" id="first_name" name="first_name" required autocomplete="given-name">
+    </div>
+    <div>
+      <label for="last_name">Last Name</label>
+      <input type="text" id="last_name" name="last_name" required autocomplete="family-name">
+    </div>
+    <div>
+      <label for="email">Email</label>
+      <input type="email" id="email" name="email" required autocomplete="email">
+    </div>
+    <div>
+      <label for="phone">Phone</label>
+      <input type="tel" id="phone" name="phone" autocomplete="tel">
+    </div>
+    <div>
+      <label for="linkedin_url">LinkedIn URL</label>
+      <input type="url" id="linkedin_url" name="linkedin_url" placeholder="https://linkedin.com/in/...">
+    </div>
+    <div>
+      <label for="resume">Resume/CV</label>
+      <div class="resume-row">
+        <input type="file" id="resume" name="resume" required style="display:none">
+        <button type="button" id="attach_resume">Attach resume</button>
+      </div>
+    </div>
+    <div>
+      <label for="cover_letter">Cover Letter</label>
+      <textarea id="cover_letter" name="cover_letter" placeholder="Why do you want to work here?"></textarea>
+    </div>
+    <fieldset>
+      <legend>Are you authorized to work in the US?</legend>
+      <label><input type="radio" name="work_auth" value="yes"> Yes</label>
+      <label><input type="radio" name="work_auth" value="no"> No</label>
+    </fieldset>
+    <div>
+      <label for="how_heard">How did you hear about us?</label>
+      <select id="how_heard" name="how_heard">
+        <option value="">Select...</option>
+        <option value="linkedin">LinkedIn</option>
+        <option value="referral">Referral</option>
+        <option value="other">Other</option>
+      </select>
+    </div>
+    <input type="hidden" name="token" value="abc">
+    <div>
+      <button type="submit">Submit application</button>
+    </div>
+  </form>
+</div>
+<script>
+  document.getElementById("greenhouse-form").addEventListener("submit", function (event) {
+    event.preventDefault();
+  });
+  document.getElementById("attach_resume").addEventListener("click", function () {
+    document.getElementById("resume").click();
+  });
+</script>
+</body>
+</html>

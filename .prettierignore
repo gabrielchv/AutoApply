@@ -1,3 +1,4 @@
 .output/
 .wxt/
+demo/
 pnpm-lock.yaml

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AutoApply Demo Pages</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        max-width: 640px;
+        margin: 3rem auto;
+        padding: 0 1rem;
+        line-height: 1.5;
+      }
+      h1 {
+        margin-bottom: 0.25rem;
+      }
+      p.sub {
+        color: #555;
+        margin-top: 0;
+      }
+      ul {
+        padding-left: 1.25rem;
+      }
+      li {
+        margin-bottom: 0.75rem;
+      }
+      a {
+        font-weight: 600;
+        color: #0b66c3;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>AutoApply Demo Pages</h1>
+    <p class="sub">
+      Simulated job application pages for testing the AutoApply extension. Open a page, click the
+      AutoApply icon, and hit <em>Fill this page</em>.
+    </p>
+    <ul>
+      <li>
+        <a href="greenhouse.html">Greenhouse-style</a> &mdash; label[for] fields, hidden file input,
+        radio + select, open cover-letter question.
+      </li>
+      <li>
+        <a href="lever.html">Lever-style</a> &mdash; card layout, many selects/radios, salary and
+        voluntary self-ID fields the extension should skip.
+      </li>
+      <li>
+        <a href="workday.html">Workday-style</a> &mdash; SPA look, blur validation, and a custom
+        uploader that rejects automated file attach (amber highlight).
+      </li>
+      <li>
+        <a href="aria.html">ARIA-only form</a> &mdash; no label[for]; labels via aria-labelledby,
+        aria-label, placeholder, and nearby text.
+      </li>
+      <li>
+        <a href="wizard.html">Multi-step wizard</a> &mdash; three steps; one fill per step.
+      </li>
+      <li>
+        <a href="iframe.html">Iframe-embedded form</a> &mdash; job posting in the top frame, form in
+        an iframe.
+      </li>
+    </ul>
+  </body>
+</html>

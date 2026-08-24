@@ -5,7 +5,7 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import prettier from 'eslint-config-prettier';
 
 export default tseslint.config(
-  { ignores: ['.output/', '.wxt/', 'node_modules/'] },
+  { ignores: ['.output/', '.wxt/', 'node_modules/', 'demo/'] },
   eslint.configs.recommended,
   tseslint.configs.recommended,
   reactHooks.configs.flat.recommended,

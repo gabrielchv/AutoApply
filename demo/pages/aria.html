@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aria Test Co - Design Engineer</title>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "JobPosting",
+  "title": "Design Engineer",
+  "description": "Own design systems at scale and ship reusable components in CSS. Prototype interactions, refine responsive layouts, and bridge design and engineering.",
+  "hiringOrganization": { "@type": "Organization", "name": "Aria Test Co" }
+}
+</script>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: Georgia, "Times New Roman", serif;
+    background: #f7f5f2;
+    color: #2b2b2b;
+    min-height: 100vh;
+  }
+  .card {
+    max-width: 600px;
+    margin: 48px auto;
+    background: #ffffff;
+    border: 1px solid #e0dcd5;
+    border-radius: 8px;
+    padding: 32px;
+  }
+  h1 { margin: 0 0 4px; font-size: 26px; font-weight: 700; }
+  .company { margin: 0 0 24px; font-size: 14px; color: #8a8a8a; }
+  .field { margin-bottom: 16px; }
+  .field-title {
+    display: block;
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: #4a4a4a;
+  }
+  .field input[type="text"],
+  .field input[type="email"],
+  .field input[type="url"],
+  .field textarea {
+    width: 100%;
+    padding: 9px 11px;
+    font-size: 14px;
+    border: 1px solid #cfc9c0;
+    border-radius: 5px;
+    outline: none;
+    background: #ffffff;
+    font-family: inherit;
+  }
+  .field textarea { min-height: 100px; resize: vertical; }
+  fieldset { border: 1px solid #d8d2c9; border-radius: 6px; margin: 0 0 16px; padding: 12px 14px; }
+  legend { font-size: 13px; font-weight: 600; color: #4a4a4a; padding: 0 6px; }
+  .radio-row { display: flex; gap: 24px; padding: 8px 4px; }
+  .radio-row label { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 400; margin: 0; color: #2b2b2b; }
+  .checkbox-row { margin-bottom: 16px; }
+  .checkbox-row label { font-size: 14px; display: flex; align-items: center; gap: 8px; }
+  button[type="submit"] {
+    width: 100%;
+    padding: 12px;
+    font-size: 15px;
+    font-weight: 700;
+    border: none;
+    border-radius: 5px;
+    background: #1a1a1a;
+    color: #ffffff;
+    cursor: pointer;
+  }
+  button[type="submit"]:hover { background: #333333; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <h1>Design Engineer Application</h1>
+    <p class="company">Aria Test Co</p>
+    <form id="aria-form">
+      <div class="field">
+        <span id="fullname-label">Full name</span>
+        <input type="text" aria-labelledby="fullname-label" name="fullName">
+      </div>
+      <div class="field">
+        <input type="email" aria-label="Email address" name="email">
+      </div>
+      <div class="field">
+        <input type="text" aria-label="Preferred pronouns" name="pronouns">
+      </div>
+      <div class="field">
+        <input type="text" placeholder="City of residence" name="city">
+      </div>
+      <div class="field">
+        <div class="field-title">Expected salary</div>
+        <input type="text" name="salary">
+      </div>
+      <div class="field">
+        <input type="url" aria-label="Portfolio URL" name="portfolio">
+      </div>
+      <div class="field">
+        <input type="file" aria-label="Resume / CV" name="resume">
+      </div>
+      <div class="checkbox-row">
+        <label><input type="checkbox" name="subscribe"> Subscribe to job alerts</label>
+      </div>
+      <fieldset>
+        <legend>Are you authorized to work in the US?</legend>
+        <div class="radio-row">
+          <label><input type="radio" name="work_auth" value="yes"> Yes</label>
+          <label><input type="radio" name="work_auth" value="no"> No</label>
+        </div>
+      </fieldset>
+      <div class="field">
+        <textarea aria-label="Tell us about yourself" name="summary"></textarea>
+      </div>
+      <button type="submit">Submit application</button>
+    </form>
+  </div>
+<script>
+  var form = document.getElementById('aria-form');
+  form.addEventListener('submit', function (event) {
+    event.preventDefault();
+  });
+</script>
+</body>
+</html>

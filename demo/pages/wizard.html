@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Backend Engineer - Wizard Test Co</title>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "JobPosting",
+  "title": "Backend Engineer",
+  "description": "Backend role building distributed systems in Go with PostgreSQL.",
+  "hiringOrganization": { "@type": "Organization", "name": "Wizard Test Co" }
+}
+</script>
+<style>
+body {
+  font-family: system-ui, sans-serif;
+  margin: 0;
+  background: #f5f5f5;
+  color: #222;
+}
+main {
+  max-width: 640px;
+  margin: 40px auto;
+  padding: 0 16px;
+}
+h1 {
+  font-size: 1.5rem;
+}
+.card {
+  background: #fff;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+.step {
+  display: block;
+}
+.step h2 {
+  font-size: 1.1rem;
+  margin: 0 0 16px;
+}
+.field {
+  margin-bottom: 16px;
+}
+label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+  font-size: 0.9rem;
+}
+input[type="text"],
+input[type="email"],
+input[type="tel"],
+input[type="number"],
+input[type="file"],
+select,
+textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  font-family: inherit;
+}
+textarea {
+  resize: vertical;
+}
+fieldset {
+  border: none;
+  margin: 0 0 16px;
+  padding: 0;
+}
+legend {
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 6px;
+}
+.radio-group label {
+  display: inline-flex;
+  align-items: center;
+  font-weight: 400;
+  margin-right: 16px;
+}
+.radio-group input {
+  margin-right: 4px;
+}
+.wizard-nav {
+  margin-top: 20px;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+button {
+  padding: 10px 18px;
+  border: 1px solid #999;
+  border-radius: 4px;
+  background: #eee;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+button[type="submit"] {
+  background: #1a73e8;
+  border-color: #1a73e8;
+  color: #fff;
+}
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+</style>
+</head>
+<body>
+<main>
+<h1>Backend Engineer at Wizard Test Co</h1>
+<p>Backend role building distributed systems in Go with PostgreSQL.</p>
+<div class="card">
+<form id="job-form">
+<section class="step" data-step="1">
+<h2>Step 1: Contact</h2>
+<div class="field">
+<label for="full_name">Full Name</label>
+<input type="text" id="full_name" name="full_name" required>
+</div>
+<div class="field">
+<label for="email">Email</label>
+<input type="email" id="email" name="email" required>
+</div>
+<div class="field">
+<label for="phone">Phone</label>
+<input type="tel" id="phone" name="phone">
+</div>
+</section>
+<section class="step" data-step="2" style="display:none">
+<h2>Step 2: Experience</h2>
+<div class="field">
+<label for="current_title">Current title</label>
+<input type="text" id="current_title" name="current_title">
+</div>
+<div class="field">
+<label for="years_experience">Years of experience</label>
+<input type="number" id="years_experience" name="years_experience" min="0">
+</div>
+<div class="field">
+<label for="education">Highest education</label>
+<select id="education" name="education">
+<option value="">Select education level</option>
+<option value="high_school">High school</option>
+<option value="associate">Associate</option>
+<option value="bachelors">Bachelor's</option>
+<option value="masters">Master's</option>
+<option value="phd">PhD</option>
+</select>
+</div>
+<div class="field">
+<label for="skills">Skills</label>
+<textarea id="skills" name="skills" rows="4" placeholder="Comma-separated skills"></textarea>
+</div>
+</section>
+<section class="step" data-step="3" style="display:none">
+<h2>Step 3: Screening</h2>
+<fieldset>
+<legend>Are you authorized to work in the US?</legend>
+<div class="radio-group">
+<label for="work_auth_yes"><input type="radio" id="work_auth_yes" name="work_auth" value="yes"> Yes</label>
+<label for="work_auth_no"><input type="radio" id="work_auth_no" name="work_auth" value="no"> No</label>
+</div>
+</fieldset>
+<div class="field">
+<label for="salary">Expected salary</label>
+<input type="text" id="salary" name="salary" placeholder="e.g. $130k">
+</div>
+<div class="field">
+<label for="why_join">Why do you want to join us?</label>
+<textarea id="why_join" name="why_join" rows="4"></textarea>
+</div>
+<div class="field">
+<label for="resume">Resume</label>
+<input type="file" id="resume" name="resume">
+</div>
+<button type="submit">Submit application</button>
+</section>
+<nav class="wizard-nav">
+<button type="button" id="prevBtn" disabled>Previous</button>
+<button type="button" id="nextBtn">Next</button>
+</nav>
+</form>
+</div>
+</main>
+<script>
+(function () {
+  var sections = document.querySelectorAll('.step');
+  var prevBtn = document.getElementById('prevBtn');
+  var nextBtn = document.getElementById('nextBtn');
+  var submitBtn = document.querySelector('#job-form button[type="submit"]');
+  var current = 0;
+
+  function showStep(index) {
+    sections.forEach(function (section, i) {
+      section.style.display = i === index ? 'block' : 'none';
+    });
+    prevBtn.disabled = index === 0;
+    nextBtn.style.display = index === sections.length - 1 ? 'none' : 'inline-block';
+    submitBtn.style.display = index === sections.length - 1 ? 'inline-block' : 'none';
+  }
+
+  nextBtn.addEventListener('click', function () {
+    if (current < sections.length - 1) {
+      current += 1;
+      showStep(current);
+    }
+  });
+
+  prevBtn.addEventListener('click', function () {
+    if (current > 0) {
+      current -= 1;
+      showStep(current);
+    }
+  });
+
+  document.getElementById('job-form').addEventListener('submit', function (event) {
+    event.preventDefault();
+  });
+
+  showStep(0);
+})();
+</script>
+</body>
+</html>
