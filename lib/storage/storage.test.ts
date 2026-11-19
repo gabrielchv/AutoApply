@@ -1,6 +1,6 @@
 import 'fake-indexeddb/auto';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { fakeBrowser } from 'wxt/testing';
+import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { IDBFactory } from 'fake-indexeddb';
 import type { LlmSettings } from '../llm/types';
 import { emptyProfile } from '../profile/empty';
