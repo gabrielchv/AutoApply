@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { fakeBrowser } from 'wxt/testing';
+import { fakeBrowser } from 'wxt/testing/fake-browser';
 
 describe('test harness', () => {
   it('provides a DOM environment', () => {

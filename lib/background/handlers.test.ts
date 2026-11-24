@@ -1,6 +1,6 @@
 import 'fake-indexeddb/auto';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { fakeBrowser } from 'wxt/testing';
+import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { IDBFactory } from 'fake-indexeddb';
 import { saveCvFile } from '../storage/cvFile';
 import { saveLlmSettings } from '../storage/settings';

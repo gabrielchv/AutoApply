@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { fakeBrowser } from 'wxt/testing';
+import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { err, ok, sendToBackground } from './protocol';
 import type { BackgroundRequest } from './protocol';
 
@@ -9,9 +9,12 @@ beforeEach(() => {
 
 describe('messaging protocol', () => {
   it('round-trips a typed request/response through runtime messaging', async () => {
-    fakeBrowser.runtime.onMessage.addListener((message: unknown) => {
+    // fake-browser 2.x follows the platform contract: the listener answers via
+    // sendResponse and returns true to keep the channel open.
+    fakeBrowser.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       if ((message as BackgroundRequest).type === 'GET_CV_FILE') {
-        return Promise.resolve(ok(null));
+        sendResponse(ok(null));
+        return true;
       }
       return undefined;
     });
@@ -21,9 +24,10 @@ describe('messaging protocol', () => {
   });
 
   it('types EXTRACT_JOB_CONTEXT as a content request returning job context', async () => {
-    fakeBrowser.runtime.onMessage.addListener((message: unknown) => {
+    fakeBrowser.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       if ((message as { type: string }).type === 'EXTRACT_JOB_CONTEXT') {
-        return Promise.resolve({ title: 'Dev', source: 'json-ld' });
+        sendResponse({ title: 'Dev', source: 'json-ld' });
+        return true;
       }
       return undefined;
     });
